@@ -638,5 +638,7 @@ Significant contributions from
   * optical <alex@rigbo.se>
   * Aaron Gyes <floam@aaron.gy>
   * surrealchemist
-
-
+============================================================
+To build and run mode
+./build.sh
+./run.sh
