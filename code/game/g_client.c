@@ -997,6 +997,8 @@ void ClientBegin( int clientNum ) {
 
 	client = level.clients + clientNum;
 
+	client->pers.homing_status = 0;
+
 	if ( ent->r.linked ) {
 		trap_UnlinkEntity( ent );
 	}

@@ -26,6 +26,78 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 /*
 ================
+G_HomingMissile
+
+================
+*/
+void G_HomingMissile( gentity_t *ent ) {
+	gentity_t     *target = NULL;
+	gentity_t     *rad = NULL;
+	vec3_t        dir, dir2, raddir, start;
+
+	while ((rad = findradius(rad, ent->r.currentOrigin, 1000)) != NULL)
+	{
+		if (!rad->client)
+			continue;
+		if (rad == ent->parent)
+			continue;
+		if (rad->health <= 0)
+			continue;
+		if (rad->client->sess.sessionTeam == TEAM_SPECTATOR)
+			continue;
+		if ( (g_gametype.integer == GT_TEAM || g_gametype.integer == GT_CTF) 
+		&& rad->client->sess.sessionTeam == ent->parent->client->sess.sessionTeam )
+			continue;
+		if (!visible(ent, rad))
+			continue;
+		
+		VectorSubtract(rad->r.currentOrigin, ent->r.currentOrigin, raddir);
+		raddir[2] += 16;
+		if ((target == NULL) || (VectorLength(raddir) < VectorLength(dir)))
+		{
+			target = rad;
+			VectorCopy(raddir, dir);
+		}
+	}
+
+	if (target != NULL)
+	{
+		VectorCopy( ent->r.currentOrigin, start);
+		VectorCopy( ent->r.currentAngles, dir2);
+		VectorNormalize(dir);
+		VectorScale(dir, 0.2, dir);
+		VectorAdd(dir, dir2, dir);
+		VectorNormalize(dir);
+		VectorCopy(start, ent->s.pos.trBase);
+		VectorScale(dir, 400, ent->s.pos.trDelta);
+		SnapVector(ent->s.pos.trDelta);
+		VectorCopy(start, ent->r.currentOrigin);
+		VectorCopy(dir, ent->r.currentAngles);
+	}
+	ent->nextthink = level.time + 100;
+}
+
+
+/*
+================
+Missile_Smooth_H
+
+================
+*/
+void     Missile_Smooth_H( gentity_t *ent, vec3_t origin, trace_t *tr) 
+{
+	int         touch[MAX_GENTITIES];
+	vec3_t      mins, maxs;
+	int         num;
+
+	num = trap_EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
+	VectorAdd( origin, ent->r.mins, mins );
+	VectorAdd( origin, ent->r.maxs, maxs );
+	VectorCopy( origin, ent->s.pos.trBase );
+	ent->s.pos.trTime = level.time;
+}
+/*
+================
 G_BounceMissile
 
 ================
@@ -478,7 +550,7 @@ void G_RunMissile( gentity_t *ent ) {
 	else {
 		VectorCopy( tr.endpos, ent->r.currentOrigin );
 	}
-
+	Missile_Smooth_H( ent, origin, &tr );
 	trap_LinkEntity( ent );
 
 	if ( tr.fraction != 1 ) {
@@ -649,25 +721,41 @@ gentity_t *fire_rocket (gentity_t *self, vec3_t start, vec3_t dir) {
 
 	bolt = G_Spawn();
 	bolt->classname = "rocket";
-	bolt->nextthink = level.time + 15000;
-	bolt->think = G_ExplodeMissile;
+
+	if (self->client->pers.homing_status == 1) 
+	{
+		bolt->nextthink = level.time + 60;
+		bolt->think = G_HomingMissile;
+		bolt->damage = 75;
+		bolt->splashDamage = 100;
+		bolt->splashRadius = 90;
+	} else {
+		bolt->nextthink = level.time + 15000;
+		bolt->think = G_ExplodeMissile;
+		bolt->damage = 100;	
+		bolt->splashDamage = 100;
+		bolt->splashRadius = 120;
+	}
+
+	
 	bolt->s.eType = ET_MISSILE;
 	bolt->r.svFlags = SVF_USE_CURRENT_ORIGIN;
 	bolt->s.weapon = WP_ROCKET_LAUNCHER;
 	bolt->r.ownerNum = self->s.number;
 	bolt->parent = self;
-	bolt->damage = 100;
-	bolt->splashDamage = 100;
-	bolt->splashRadius = 120;
 	bolt->methodOfDeath = MOD_ROCKET;
 	bolt->splashMethodOfDeath = MOD_ROCKET_SPLASH;
 	bolt->clipmask = MASK_SHOT;
 	bolt->target_ent = NULL;
-
 	bolt->s.pos.trType = TR_LINEAR;
 	bolt->s.pos.trTime = level.time - MISSILE_PRESTEP_TIME;		// move a bit on the very first frame
 	VectorCopy( start, bolt->s.pos.trBase );
-	VectorScale( dir, 900, bolt->s.pos.trDelta );
+
+	if (self->client->pers.homing_status == 1)
+		VectorScale( dir, 400, bolt->s.pos.trDelta );
+	else
+		VectorScale( dir, 900, bolt->s.pos.trDelta );
+
 	SnapVector( bolt->s.pos.trDelta );			// save net bandwidth
 	VectorCopy (start, bolt->r.currentOrigin);
 

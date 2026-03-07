@@ -246,6 +246,7 @@ typedef struct {
 	int			voteCount;			// to prevent people from constantly calling votes
 	int			teamVoteCount;		// to prevent people from constantly calling votes
 	qboolean	teamInfo;			// send team overlay updates?
+	qboolean    homing_status;		
 } clientPersistant_t;
 
 
@@ -484,6 +485,8 @@ void G_AddEvent( gentity_t *ent, int event, int eventParm );
 void G_SetOrigin( gentity_t *ent, vec3_t origin );
 void AddRemap(const char *oldShader, const char *newShader, float timeOffset);
 const char *BuildShaderStateConfig( void );
+qboolean visible( gentity_t *ent1, gentity_t *ent2 );
+gentity_t *findradius( gentity_t *from, vec3_t org, float rad );
 
 //
 // g_combat.c

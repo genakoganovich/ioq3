@@ -1703,6 +1703,27 @@ void Cmd_Stats_f( gentity_t *ent ) {
 
 /*
 =================
+Cmd_SetHoming_f
+=================
+*/
+void Cmd_SetHoming_f (gentity_t *ent)
+{
+	if (ent->client->pers.homing_status == 1)
+	{
+		trap_SendServerCommand( ent-g_entities, va("print \"Homing Missiles are off.\n\""));
+		ent->client->pers.homing_status = 0;
+		
+	}
+	else
+	{
+		trap_SendServerCommand( ent-g_entities, va("print \"Homing Missiles are on.\n\""));
+		ent->client->pers.homing_status = 1;
+		
+	}
+}
+
+/*
+=================
 ClientCommand
 =================
 */
@@ -1817,6 +1838,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_SetViewpos_f( ent );
 	else if (Q_stricmp (cmd, "stats") == 0)
 		Cmd_Stats_f( ent );
+	else if (Q_stricmp (cmd, "homing") == 0)
+		Cmd_SetHoming_f( ent );
 	else
 		trap_SendServerCommand( clientNum, va("print \"unknown cmd %s\n\"", cmd ) );
 }
