@@ -13,4 +13,4 @@ cp -f "$SRC_DIR"/{ui,qagame,cgame}.qvm "$DST_DIR"/
 
 # Запуск ioquake3
 cd "$HOME/ioq3/build/Release" || exit 1
-./ioquake3 +set fs_game ioq3 +map q3dm1
+./ioquake3 +set fs_game ioq3 +set sv_pure 0 +map q3dm1

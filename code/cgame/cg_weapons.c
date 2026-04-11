@@ -2035,6 +2035,7 @@ static void CG_ShotgunPattern( vec3_t origin, vec3_t origin2, int seed, int othe
 	float		r, u;
 	vec3_t		end;
 	vec3_t		forward, right, up;
+	int         accuracyFactor = 2;
 
 	// derive the right and up vectors from the forward vector, because
 	// the client won't have any other information
@@ -2042,10 +2043,23 @@ static void CG_ShotgunPattern( vec3_t origin, vec3_t origin2, int seed, int othe
 	PerpendicularVector( right, forward );
 	CrossProduct( forward, right, up );
 
+	if ( otherEntNum == cg.snap->ps.clientNum )
+	{
+		// is the user crouching? bump up the accuracy!
+		if (cg.snap->ps.pm_flags & PMF_DUCKED)
+			accuracyFactor = 1;
+		// is the user moving? lower the accuracy!
+		else if (cg.snap->ps.velocity[0] || cg.snap->ps.velocity[1])
+			accuracyFactor = 3;
+		// is the user jumping? lower it more!
+		else if (cg.snap->ps.velocity[2])
+			accuracyFactor = 4;
+	}
+
 	// generate the "random" spread pattern
 	for ( i = 0 ; i < DEFAULT_SHOTGUN_COUNT ; i++ ) {
-		r = Q_crandom( &seed ) * DEFAULT_SHOTGUN_SPREAD * 16;
-		u = Q_crandom( &seed ) * DEFAULT_SHOTGUN_SPREAD * 16;
+		r = Q_crandom( &seed ) * DEFAULT_SHOTGUN_SPREAD * accuracyFactor * 16;
+		u = Q_crandom( &seed ) * DEFAULT_SHOTGUN_SPREAD * accuracyFactor * 16;
 		VectorMA( origin, 8192 * 16, forward, end);
 		VectorMA (end, r, right, end);
 		VectorMA (end, u, up, end);
